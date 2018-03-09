@@ -23,16 +23,29 @@ public class AuctionSniperEndToEndTest {
 
     @Test
     public void testSniperJoinsAuctionUntilAuctionCloses() throws Exception {
+        // 1. Tell the auction to send a price to the Sniper
         auction.startSellingItem();
+
+        // 2. Check the Sniper has received and responded to the price.
         application.startBiddingIn(auction);
-        auction.hasReceivedJoinRequestFromSniper();
+        // Wait for stub auction to receive join request
+        auction.hasReceivedJoinRequestFromSniper(ApplicationRunner.SNIPPER_XMPP_ID);
+        // stub auction sends message back to sniper with news that once the price is 1000 the next increment would be 98 and winning bidder is
+        // other bidder
+        auction.reportPrice(1000, 98, "other bidder");
+        // check that the Sniper shows that it’s now bidding after it’s received the price update message from the auction
+        application.hasShownSniperIsBidding();
+
+        // 3. Check the auction has received an incremented bid from Sniper.
+        auction.hasReceivedBid(1098, ApplicationRunner.SNIPPER_XMPP_ID);
+
         auction.announceClosed();
         application.showSniperHasLostAuction();
     }
 
     @After
     public void stopAuction() throws Exception {
-        auction.close();
+        auction.stop();
     }
 
     @After
